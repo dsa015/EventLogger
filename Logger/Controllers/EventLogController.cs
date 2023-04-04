@@ -1,4 +1,6 @@
 ﻿using Logger.Command;
+using Logger.Models;
+using Logger.Services;
 using Logger.ViewModel;
 using Microsoft.AspNetCore.Mvc;
  
@@ -8,69 +10,66 @@ namespace Logger.Controllers
     [ApiController]
     public class EventLogController : ControllerBase
     {
-        List<EventViewModel> events = new List<EventViewModel>();
-
-        public EventLogController() {
-            events.Add(new EventViewModel {EventCode="success",EventDescription="bla bla bla",ResourceOwnerId=1});
-        }
-
-
+        private EventService eventService = new EventService();
+        
         [HttpPost("event")]
         public ActionResult<EventViewModel> createEvent([FromBody] EventCommand data)
         {
-            if (data == null) return BadRequest("Missing body");
-            var @event = EventCommandToViewModel(data);
-            events.Add(@event);
+            var sbankenEvent = eventService.CreateEvent(data);
+            if (sbankenEvent is null)
+                return NotFound();
 
-            return Ok(@event);
+            return Ok(Map(sbankenEvent));
         }
 
         [HttpGet("event")]
-        public ActionResult<List<EventViewModel>> getEvenst()
+        public ActionResult<List<EventViewModel>> getEvents()
         {
-            return Ok(events);
+            var events = eventService.GetEvents();
+            var viewModels = events.Select(Map);
+
+            return Ok(viewModels);
         }
 
         [HttpGet("event/{id}")]
         public ActionResult<EventViewModel> getEvent([FromRoute] string id)
         {
-            if (id == null) return Ok(events);
-            EventViewModel @event = events.FirstOrDefault(x => x.Id == id);
-            if (@event == null) return NotFound("Event not found");
+            var @event = eventService.GetEvent(id);
+            if (@event is null)
+                return NotFound();
 
-            return Ok(@event); 
+            return Ok(Map(@event));
         }
 
         [HttpDelete("event/{id}")]
         public ActionResult<EventViewModel> deleteEvent([FromRoute] string id)
         {
-            if (id == null) return BadRequest("Missing event id in route");
-            EventViewModel @event = events.FirstOrDefault(x => x.Id == id);
-            if (@event == null) return NotFound("Event not found");
-            events.Remove(@event); 
-
+            eventService.DeleteEvent(id);
             return Ok();
         }
 
         [HttpPatch("event/{id}")]
         public ActionResult<EventViewModel> updateEvent([FromRoute] string id, [FromBody] EventCommand data)
         {
-            if (id == null) return BadRequest("Missing event id in route");
-            EventViewModel @event = events.FirstOrDefault(x => x.Id == id);
-            if (@event == null) return NotFound("Event not found");
-            events.Remove(@event);
+            var @event = eventService.UpdateEvent(id, data);
+            if (@event is null)
+                return NotFound();
 
-            @event.EventDescription = data.EventDescription;
-            @event.PerformedByUser = data.PerformedByUser;
-            @event.ResourceOwnerId = data.ResourceOwnerId;
-            @event.EventCode = data.EventCode;
-
-            events.Add(@event);
-
-            return Ok(@event);
+            return Ok(Map(@event));
         }
 
-        private EventViewModel EventCommandToViewModel(EventCommand command) =>
+        private static EventViewModel Map(SbankenEvent sbankenEvent) =>
+            new()
+            {
+                EventCode = sbankenEvent.EventCode,
+                EventDescription = sbankenEvent.EventDescription,
+                Id = sbankenEvent.Id,
+                PerformedByUser = sbankenEvent.PerformedByUser,
+                ResourceOwnerId = sbankenEvent.ResourceOwnerId,
+                TraceId = sbankenEvent.TraceId
+            };
+
+        private static EventViewModel EventCommandToViewModel(EventCommand command) =>
             new()
             {
                 EventCode = command.EventCode,
