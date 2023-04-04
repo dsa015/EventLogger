@@ -5,53 +5,59 @@ using Logger.Repository;
 
 namespace Logger.Services
 {
-	public class EventService
-	{
-		private SbankenEventRepository repository = new SbankenEventRepository();
+    public class EventService : IEventService
+    {
+        private ISbankenEventRepository repository;
 
-        public SbankenEvent CreateEvent(EventCommand eventCommand) {
-			var sbankenEvent = Map(eventCommand);
-			repository.Save(sbankenEvent);
+        public EventService(ISbankenEventRepository repository)
+        {
+            this.repository = repository;
+        }
 
-			return sbankenEvent;
-		}
+        public SbankenEvent CreateEvent(EventCommand eventCommand)
+        {
+            var sbankenEvent = Map(eventCommand);
+            repository.Save(sbankenEvent);
 
-		public SbankenEvent GetEvent(string eventId)
-		{
-			return repository.GetById(eventId);
-		}
+            return sbankenEvent;
+        }
 
-		public SbankenEvent[] GetEvents()
-		{
-			return repository.GetAll().ToArray();
-		}
+        public SbankenEvent GetEvent(string eventId)
+        {
+            return repository.GetById(eventId);
+        }
 
-		public SbankenEvent UpdateEvent(string eventId, EventCommand eventCommand)
-		{
-			var existingEvent = repository.GetById(eventId);
-			if (existingEvent is null)
-				throw new InvalidOperationException("Event not found");
+        public SbankenEvent[] GetEvents()
+        {
+            return repository.GetAll().ToArray();
+        }
 
-			existingEvent.Update(eventCommand.ResourceOwnerId,
+        public SbankenEvent UpdateEvent(string eventId, EventCommand eventCommand)
+        {
+            var existingEvent = repository.GetById(eventId);
+            if (existingEvent is null)
+                throw new InvalidOperationException("Event not found");
+
+            existingEvent.Update(eventCommand.ResourceOwnerId,
                         eventCommand.PerformedByUser,
                         eventCommand.EventCode,
                         eventCommand.EventDescription);
 
-			repository.Save(existingEvent);
+            repository.Save(existingEvent);
 
-			return existingEvent;
-		}
+            return existingEvent;
+        }
 
-		public void DeleteEvent(string eventId)
-		{
-			repository.Delete(eventId);
-		}
+        public void DeleteEvent(string eventId)
+        {
+            repository.Delete(eventId);
+        }
 
-		private static SbankenEvent Map(EventCommand command) =>
-			new SbankenEvent(command.ResourceOwnerId,
+        private static SbankenEvent Map(EventCommand command) =>
+            new SbankenEvent(command.ResourceOwnerId,
                     command.PerformedByUser,
                     command.EventCode,
                     command.EventDescription);
-	}
+    }
 }
 

@@ -10,8 +10,13 @@ namespace Logger.Controllers
     [ApiController]
     public class EventLogController : ControllerBase
     {
-        private EventService eventService = new EventService();
-        
+        private IEventService eventService;
+
+        public EventLogController(IEventService eventService)
+        {
+            this.eventService = eventService;
+        }
+
         [HttpPost("event")]
         public ActionResult<EventViewModel> createEvent([FromBody] EventCommand data)
         {
@@ -67,15 +72,6 @@ namespace Logger.Controllers
                 PerformedByUser = sbankenEvent.PerformedByUser,
                 ResourceOwnerId = sbankenEvent.ResourceOwnerId,
                 TraceId = sbankenEvent.TraceId
-            };
-
-        private static EventViewModel EventCommandToViewModel(EventCommand command) =>
-            new()
-            {
-                EventCode = command.EventCode,
-                EventDescription = command.EventDescription,
-                ResourceOwnerId = command.ResourceOwnerId,
-                PerformedByUser = command.PerformedByUser
             };
     }
 }
